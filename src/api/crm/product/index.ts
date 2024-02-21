@@ -4,12 +4,18 @@ export interface ProductVO {
   id: number
   name: string
   no: string
-  unit: string
+  unit: number
   price: number
   status: number
   categoryId: number
   description: string
   ownerUserId: number
+}
+
+export interface ProductExpandVO extends ProductVO {
+  count: number
+  discountPercent: number
+  totalPrice: number
 }
 
 // 查询产品列表

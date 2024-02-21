@@ -133,6 +133,10 @@ export const PayChannelEnum = {
     code: 'alipay_bar',
     name: '支付宝条码支付'
   },
+  WALLET: {
+    code: 'wallet',
+    name: '钱包支付'
+  },
   MOCK: {
     code: 'mock',
     name: '模拟支付'
@@ -244,15 +248,15 @@ export const CouponTemplateTakeTypeEnum = {
  */
 export const PromotionProductScopeEnum = {
   ALL: {
-    scope: 1,
+    scope: 10,
     name: '通用劵'
   },
   SPU: {
-    scope: 2,
+    scope: 20,
     name: '商品劵'
   },
   CATEGORY: {
-    scope: 3,
+    scope: 30,
     name: '品类劵'
   }
 }
@@ -413,4 +417,15 @@ export const TradeOrderStatusEnum = {
     status: 40,
     name: '已取消'
   }
+}
+
+// ========== ERP - 企业资源计划 ==========
+
+export const ErpBizType = {
+  PURCHASE_ORDER: 10,
+  PURCHASE_IN: 11,
+  PURCHASE_RETURN: 12,
+  SALE_ORDER: 20,
+  SALE_OUT: 21,
+  SALE_RETURN: 22
 }

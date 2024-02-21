@@ -15,7 +15,7 @@
             <Icon icon="system-uicons:reset-alt" :size="24" />
           </el-button>
         </el-tooltip>
-        <el-tooltip content="预览">
+        <el-tooltip content="预览" v-if="previewUrl">
           <el-button @click="handlePreview">
             <Icon icon="ep:view" :size="24" />
           </el-button>
@@ -27,11 +27,12 @@
         </el-tooltip>
       </el-button-group>
     </el-header>
+
     <!-- 中心区域 -->
     <el-container class="editor-container">
-      <!-- 左侧：组件库 -->
+      <!-- 左侧：组件库（ComponentLibrary） -->
       <ComponentLibrary ref="componentLibrary" :list="libs" v-if="libs && libs.length > 0" />
-      <!-- 中心设计区域 -->
+      <!-- 中心：设计区域（ComponentContainer） -->
       <div class="editor-center page-prop-area" @click="handlePageSelected">
         <!-- 手机顶部 -->
         <div class="editor-design-top">
@@ -45,6 +46,18 @@
             :active="selectedComponent?.id === navigationBarComponent.id"
             @click="handleNavigationBarSelected"
             class="cursor-pointer!"
+          />
+        </div>
+        <!-- 绝对定位的组件：例如 弹窗、浮动按钮等 -->
+        <div
+          v-for="(component, index) in pageComponents"
+          :key="index"
+          @click="handleComponentSelected(component, index)"
+        >
+          <component
+            v-if="component.position === 'fixed' && selectedComponent?.uid === component.uid"
+            :is="component.id"
+            :property="component.property"
           />
         </div>
         <!-- 手机页面编辑区域 -->
@@ -70,6 +83,7 @@
           >
             <template #item="{ element, index }">
               <ComponentContainer
+                v-if="!element.position || element.position === 'center'"
                 :component="element"
                 :active="selectedComponentIndex === index"
                 :can-move-up="index > 0"
@@ -91,8 +105,35 @@
             @click="handleTabBarSelected"
           />
         </div>
+        <!-- 固定布局的组件 操作按钮区 -->
+        <div class="fixed-component-action-group">
+          <el-tag
+            v-if="showPageConfig"
+            size="large"
+            :effect="selectedComponent?.uid === pageConfigComponent.uid ? 'dark' : 'plain'"
+            :type="selectedComponent?.uid === pageConfigComponent.uid ? '' : 'info'"
+            @click="handleComponentSelected(pageConfigComponent)"
+          >
+            <Icon :icon="pageConfigComponent.icon" :size="12" />
+            <span>{{ pageConfigComponent.name }}</span>
+          </el-tag>
+          <template v-for="(component, index) in pageComponents" :key="index">
+            <el-tag
+              v-if="component.position === 'fixed'"
+              size="large"
+              closable
+              :effect="selectedComponent?.uid === component.uid ? 'dark' : 'plain'"
+              :type="selectedComponent?.uid === component.uid ? '' : 'info'"
+              @click="handleComponentSelected(component)"
+              @close="handleDeleteComponent(index)"
+            >
+              <Icon :icon="component.icon" :size="12" />
+              <span>{{ component.name }}</span>
+            </el-tag>
+          </template>
+        </div>
       </div>
-      <!-- 右侧属性面板 -->
+      <!-- 右侧：属性面板（ComponentContainerProperty） -->
       <el-aside class="editor-right" width="350px" v-if="selectedComponent?.property">
         <el-card
           shadow="never"
@@ -102,8 +143,8 @@
           <!-- 组件名称 -->
           <template #header>
             <div class="flex items-center gap-8px">
-              <Icon :icon="selectedComponent.icon" color="gray" />
-              <span>{{ selectedComponent.name }}</span>
+              <Icon :icon="selectedComponent?.icon" color="gray" />
+              <span>{{ selectedComponent?.name }}</span>
             </div>
           </template>
           <el-scrollbar
@@ -111,7 +152,8 @@
             view-class="p-[var(--el-card-padding)] p-b-[calc(var(--el-card-padding)+var(--el-card-padding))] property"
           >
             <component
-              :is="selectedComponent.id + 'Property'"
+              :key="selectedComponent?.uid || selectedComponent?.id"
+              :is="selectedComponent?.id + 'Property'"
               v-model="selectedComponent.property"
             />
           </el-scrollbar>
@@ -119,6 +161,20 @@
       </el-aside>
     </el-container>
   </el-container>
+
+  <!-- 预览弹框 -->
+  <Dialog v-model="previewDialogVisible" title="预览" width="700">
+    <div class="flex justify-around">
+      <IFrame
+        class="w-375px border-4px border-rounded-8px border-solid p-2px h-667px!"
+        :src="previewUrl"
+      />
+      <div class="flex flex-col">
+        <el-text>手机扫码预览</el-text>
+        <Qrcode :text="previewUrl" logo="/logo.gif" />
+      </div>
+    </div>
+  </Dialog>
 </template>
 <script lang="ts">
 // 注册所有的组件
@@ -137,12 +193,12 @@ import { component as TAB_BAR_COMPONENT } from './components/mobile/TabBar/confi
 import { isString } from '@/utils/is'
 import { DiyComponent, DiyComponentLibrary, PageConfig } from '@/components/DiyEditor/util'
 import { componentConfigs } from '@/components/DiyEditor/components/mobile'
+import { array, oneOfType } from 'vue-types'
+import { propTypes } from '@/utils/propTypes'
 
 /** 页面装修详情页 */
 defineOptions({ name: 'DiyPageDetail' })
 
-// 消息弹窗
-const message = useMessage()
 // 左侧组件库
 const componentLibrary = ref()
 // 页面设置组件
@@ -159,22 +215,25 @@ const selectedComponentIndex = ref<number>(-1)
 // 组件列表
 const pageComponents = ref<DiyComponent<any>[]>([])
 // 定义属性
-const props = defineProps<{
+const props = defineProps({
   // 页面配置，支持Json字符串
-  modelValue: string | PageConfig
+  modelValue: oneOfType<string | PageConfig>([String, Object]).isRequired,
   // 标题
-  title: string
+  title: propTypes.string.def(''),
   // 组件库
-  libs: DiyComponentLibrary[]
+  libs: array<DiyComponentLibrary>(),
   // 是否显示顶部导航栏
-  showNavigationBar: boolean
+  showNavigationBar: propTypes.bool.def(true),
   // 是否显示底部导航菜单
-  showTabBar: boolean
+  showTabBar: propTypes.bool.def(false),
   // 是否显示页面配置
-  showPageConfig: boolean
-}>()
+  showPageConfig: propTypes.bool.def(true),
+  // 预览地址：提供了预览地址，才会显示预览按钮
+  previewUrl: propTypes.string.def('')
+})
 
 // 监听传入的页面配置
+// 解析出 pageConfigComponent 页面整体的配置，navigationBarComponent、pageComponents、tabBarComponent 页面上、中、下的配置
 watch(
   () => props.modelValue,
   () => {
@@ -195,6 +254,7 @@ watch(
     immediate: true
   }
 )
+
 // 保存
 const handleSave = () => {
   const pageConfig = {
@@ -247,7 +307,7 @@ const handleTabBarSelected = () => {
   handleComponentSelected(unref(tabBarComponent))
 }
 
-// 组件变动
+// 组件变动（拖拽）
 const handleComponentChange = (dragEvent: any) => {
   // 新增，即从组件库拖拽添加组件
   if (dragEvent.added) {
@@ -271,18 +331,21 @@ const swapComponent = (oldIndex: number, newIndex: number) => {
   selectedComponentIndex.value = newIndex
 }
 
-/** 移动组件 */
+/** 移动组件（上移、下移） */
 const handleMoveComponent = (index: number, direction: number) => {
   const newIndex = index + direction
   if (newIndex < 0 || newIndex >= pageComponents.value.length) return
 
   swapComponent(index, newIndex)
 }
+
 /** 复制组件 */
 const handleCopyComponent = (index: number) => {
   const component = cloneDeep(pageComponents.value[index])
+  component.uid = new Date().getTime()
   pageComponents.value.splice(index + 1, 0, component)
 }
+
 /**
  * 删除组件
  * @param index 当前组件index
@@ -306,14 +369,19 @@ const handleDeleteComponent = (index: number) => {
 
 // 工具栏操作
 const emits = defineEmits(['reset', 'preview', 'save', 'update:modelValue'])
+
+// 注入无感刷新页面函数
+const reload = inject<() => void>('reload')
 // 重置
 const handleReset = () => {
-  message.warning('开发中~')
+  if (reload) reload()
   emits('reset')
 }
+
 // 预览
+const previewDialogVisible = ref(false)
 const handlePreview = () => {
-  message.warning('开发中~')
+  previewDialogVisible.value = true
   emits('preview')
 }
 
@@ -327,10 +395,12 @@ const setDefaultSelectedComponent = () => {
     selectedComponent.value = unref(tabBarComponent)
   }
 }
+
 watch(
   () => [props.showPageConfig, props.showNavigationBar, props.showTabBar],
   () => setDefaultSelectedComponent()
 )
+
 onMounted(() => setDefaultSelectedComponent())
 </script>
 <style lang="scss" scoped>
@@ -461,6 +531,31 @@ $toolbar-height: 42px;
           .drag-area {
             width: 100%;
             height: 100%;
+          }
+        }
+      }
+
+      /* 固定布局的组件 操作按钮区 */
+      .fixed-component-action-group {
+        position: absolute;
+        top: 0;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        :deep(.el-tag) {
+          box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+          border: none;
+          .el-tag__content {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+
+            .el-icon {
+              margin-right: 4px;
+            }
           }
         }
       }

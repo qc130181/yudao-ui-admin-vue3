@@ -76,13 +76,17 @@
           <Icon class="mr-5px" icon="ep:search" />
           搜索
         </el-button>
-        <el-button @click="resetQuery">
+        <el-button @click="resetQuery(undefined)">
           <Icon class="mr-5px" icon="ep:refresh" />
           重置
         </el-button>
         <el-button v-hasPermi="['crm:customer:create']" type="primary" @click="openForm('create')">
           <Icon class="mr-5px" icon="ep:plus" />
           新增
+        </el-button>
+        <el-button v-hasPermi="['crm:customer:import']" plain type="warning" @click="handleImport">
+          <Icon icon="ep:upload" />
+          导入
         </el-button>
         <el-button
           v-hasPermi="['crm:customer:export']"
@@ -100,17 +104,30 @@
 
   <!-- 列表 -->
   <ContentWrap>
+    <el-tabs v-model="activeName" @tab-click="handleClick">
+      <el-tab-pane label="我负责的" name="1" />
+      <el-tab-pane label="我参与的" name="2" />
+      <el-tab-pane label="下属负责的" name="3" />
+    </el-tabs>
     <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true">
-      <el-table-column align="center" label="编号" prop="id" />
-      <el-table-column align="center" label="客户名称" prop="name" width="160" />
-      <el-table-column align="center" label="所属行业" prop="industryId" width="120">
+      <el-table-column align="center" label="编号" fixed="left" prop="id" />
+      <el-table-column align="center" label="客户名称" fixed="left" prop="name" width="160">
         <template #default="scope">
-          <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_INDUSTRY" :value="scope.row.industryId" />
+          <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
+            {{ scope.row.name }}
+          </el-link>
         </template>
       </el-table-column>
+      <el-table-column align="center" label="手机" prop="mobile" width="120" />
+      <el-table-column align="center" label="电话" prop="telephone" width="120" />
       <el-table-column align="center" label="客户来源" prop="source" width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_SOURCE" :value="scope.row.source" />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="所属行业" prop="industryId" width="120">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_INDUSTRY" :value="scope.row.industryId" />
         </template>
       </el-table-column>
       <el-table-column align="center" label="客户等级" prop="level" width="120">
@@ -118,23 +135,7 @@
           <dict-tag :type="DICT_TYPE.CRM_CUSTOMER_LEVEL" :value="scope.row.level" />
         </template>
       </el-table-column>
-      <el-table-column align="center" label="手机" prop="mobile" width="120" />
-      <el-table-column align="center" label="详细地址" prop="detailAddress" width="200" />
-      <el-table-column align="center" label="负责人" prop="ownerUserName" />
-      <el-table-column align="center" label="所属部门" prop="ownerUserDept" />
-      <el-table-column align="center" label="创建人" prop="creatorName" />
-      <el-table-column
-        :formatter="dateFormatter"
-        align="center"
-        label="创建时间"
-        prop="createTime"
-        width="180px"
-      />
-      <el-table-column align="center" label="成交状态" prop="dealStatus">
-        <template #default="scope">
-          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.dealStatus" />
-        </template>
-      </el-table-column>
+      <el-table-column align="center" label="网址" prop="website" width="200" />
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -142,6 +143,15 @@
         prop="contactNextTime"
         width="180px"
       />
+      <el-table-column align="center" label="备注" prop="remark" width="200" />
+      <el-table-column align="center" label="成交状态" prop="dealStatus">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.dealStatus" />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="距离进入公海" prop="poolDay" width="120">
+        <template #default="scope"> {{ scope.row.poolDay }} 天</template>
+      </el-table-column>
       <el-table-column
         :formatter="dateFormatter"
         align="center"
@@ -149,15 +159,25 @@
         prop="contactLastTime"
         width="180px"
       />
-      <el-table-column align="center" label="锁定状态" prop="lockStatus">
-        <template #default="scope">
-          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.lockStatus" />
-        </template>
-      </el-table-column>
-      <!--  TODO @wanwan 距进入公海天数    -->
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        label="创建时间"
+        prop="updateTime"
+        width="180px"
+      />
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        label="创建时间"
+        prop="createTime"
+        width="180px"
+      />
+      <el-table-column align="center" label="负责人" prop="ownerUserName" width="100px" />
+      <el-table-column align="center" label="所属部门" prop="ownerUserDeptName" width="100px" />
+      <el-table-column align="center" label="创建人" prop="creatorName" width="100px" />
       <el-table-column align="center" fixed="right" label="操作" min-width="150">
         <template #default="scope">
-          <el-button link type="primary" @click="openDetail(scope.row.id)">详情</el-button>
           <el-button
             v-hasPermi="['crm:customer:update']"
             link
@@ -185,11 +205,10 @@
       @pagination="getList"
     />
   </ContentWrap>
-  <!-- TODO 方便查看效果 TODO 芋艿：先注释了，避免演示环境报错 -->
-  <!--  <CrmTeam :biz-id="1" :biz-type="CrmBizTypeEnum.CRM_CUSTOMER" />-->
 
   <!-- 表单弹窗：添加/修改 -->
   <CustomerForm ref="formRef" @success="getList" />
+  <CustomerImportForm ref="importFormRef" @success="getList" />
 </template>
 
 <script lang="ts" setup>
@@ -198,7 +217,8 @@ import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import * as CustomerApi from '@/api/crm/customer'
 import CustomerForm from './CustomerForm.vue'
-import { CrmBizTypeEnum, CrmTeam } from '@/views/crm/components'
+import CustomerImportForm from './CustomerImportForm.vue'
+import { TabsPaneContext } from 'element-plus'
 
 defineOptions({ name: 'CrmCustomer' })
 
@@ -208,23 +228,62 @@ const { t } = useI18n() // 国际化
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
 const list = ref([]) // 列表的数据
-const queryParams = reactive({
+const queryParams = ref<{
+  pageNo: number
+  pageSize: number
+  name: string
+  mobile: string
+  industryId: number | undefined
+  level: number | undefined
+  source: number | undefined
+  sceneType: number | undefined
+  pool: boolean | undefined
+}>({
   pageNo: 1,
   pageSize: 10,
-  name: null,
-  mobile: null,
-  industryId: null,
-  level: null,
-  source: null
+  name: '',
+  mobile: '',
+  industryId: undefined,
+  level: undefined,
+  source: undefined,
+  sceneType: undefined,
+  pool: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+const activeName = ref('1') // 列表 tab
+
+enum CrmSceneTypeEnum {
+  OWNER = 1,
+  INVOLVED = 2,
+  SUBORDINATE = 3
+}
+
+const handleClick = (tab: TabsPaneContext) => {
+  switch (tab.paneName) {
+    case '1':
+      resetQuery(() => {
+        queryParams.value.sceneType = CrmSceneTypeEnum.OWNER
+      })
+      break
+    case '2':
+      resetQuery(() => {
+        queryParams.value.sceneType = CrmSceneTypeEnum.INVOLVED
+      })
+      break
+    case '3':
+      resetQuery(() => {
+        queryParams.value.sceneType = CrmSceneTypeEnum.SUBORDINATE
+      })
+      break
+  }
+}
 
 /** 查询列表 */
 const getList = async () => {
   loading.value = true
   try {
-    const data = await CustomerApi.getCustomerPage(queryParams)
+    const data = await CustomerApi.getCustomerPage(queryParams.value)
     list.value = data.list
     total.value = data.total
   } finally {
@@ -234,18 +293,30 @@ const getList = async () => {
 
 /** 搜索按钮操作 */
 const handleQuery = () => {
-  queryParams.pageNo = 1
+  queryParams.value.pageNo = 1
   getList()
 }
 
 /** 重置按钮操作 */
-const resetQuery = () => {
+const resetQuery = (func: Function | undefined = undefined) => {
   queryFormRef.value.resetFields()
+  queryParams.value = {
+    pageNo: 1,
+    pageSize: 10,
+    name: '',
+    mobile: '',
+    industryId: undefined,
+    level: undefined,
+    source: undefined,
+    sceneType: undefined,
+    pool: undefined
+  }
+  func && func()
   handleQuery()
 }
 
 /** 打开客户详情 */
-const { push } = useRouter()
+const { currentRoute, push } = useRouter()
 const openDetail = (id: number) => {
   push({ name: 'CrmCustomerDetail', params: { id } })
 }
@@ -269,6 +340,12 @@ const handleDelete = async (id: number) => {
   } catch {}
 }
 
+/** 导入按钮操作 */
+const importFormRef = ref<InstanceType<typeof CustomerImportForm>>()
+const handleImport = () => {
+  importFormRef.value?.open()
+}
+
 /** 导出按钮操作 */
 const handleExport = async () => {
   try {
@@ -276,13 +353,21 @@ const handleExport = async () => {
     await message.exportConfirm()
     // 发起导出
     exportLoading.value = true
-    const data = await CustomerApi.exportCustomer(queryParams)
+    const data = await CustomerApi.exportCustomer(queryParams.value)
     download.excel(data, '客户.xls')
   } catch {
   } finally {
     exportLoading.value = false
   }
 }
+
+/** 监听路由变化更新列表 */
+watch(
+  () => currentRoute.value,
+  () => {
+    getList()
+  }
+)
 
 /** 初始化 **/
 onMounted(() => {

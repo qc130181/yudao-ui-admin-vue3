@@ -472,7 +472,8 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: {
           title: '模板装修',
           noCache: true,
-          hidden: true
+          hidden: true,
+          activeMenu: '/mall/promotion/diy/template'
         },
         component: () => import('@/views/mall/promotion/diy/template/decorate.vue')
       },
@@ -482,7 +483,8 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: {
           title: '页面装修',
           noCache: true,
-          hidden: true
+          hidden: true,
+          activeMenu: '/mall/promotion/diy/page'
         },
         component: () => import('@/views/mall/promotion/diy/page/decorate.vue')
       }
@@ -500,9 +502,21 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: {
           title: '客户详情',
           noCache: true,
-          hidden: true
+          hidden: true,
+          activeMenu: '/crm/customer'
         },
         component: () => import('@/views/crm/customer/detail/index.vue')
+      },
+      {
+        path: 'contract/detail/:id',
+        name: 'CrmContractDetail',
+        meta: {
+          title: '合同详情',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/crm/contract'
+        },
+        component: () => import('@/views/crm/contract/detail/index.vue')
       },
       {
         path: 'contact/detail/:id',
@@ -510,9 +524,21 @@ const remainingRouter: AppRouteRecordRaw[] = [
         meta: {
           title: '联系人详情',
           noCache: true,
-          hidden: true
+          hidden: true,
+          activeMenu: '/crm/contact'
         },
         component: () => import('@/views/crm/contact/detail/index.vue')
+      },
+      {
+        path: 'product/detail/:id',
+        name: 'CrmProductDetail',
+        meta: {
+          title: '产品详情',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/crm/product'
+        },
+        component: () => import('@/views/crm/product/detail/index.vue')
       }
     ]
   }

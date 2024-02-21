@@ -1,30 +1,30 @@
 <template>
   <div class="upload-box">
     <el-upload
-      :action="updateUrl"
       :id="uuid"
-      :class="['upload', drag ? 'no-border' : '']"
-      :multiple="false"
-      :show-file-list="false"
-      :headers="uploadHeaders"
-      :before-upload="beforeUpload"
-      :on-success="uploadSuccess"
-      :on-error="uploadError"
-      :drag="drag"
       :accept="fileType.join(',')"
+      :action="uploadUrl"
+      :before-upload="beforeUpload"
+      :class="['upload', drag ? 'no-border' : '']"
+      :drag="drag"
+      :multiple="false"
+      :on-error="uploadError"
+      :on-success="uploadSuccess"
+      :show-file-list="false"
+      :http-request="httpRequest"
     >
       <template v-if="modelValue">
         <img :src="modelValue" class="upload-image" />
         <div class="upload-handle" @click.stop>
-          <div class="handle-icon" @click="editImg">
+          <div class="handle-icon" @click="editImg" v-if="!disabled">
             <Icon icon="ep:edit" />
             <span v-if="showBtnText">{{ t('action.edit') }}</span>
           </div>
-          <div class="handle-icon" @click="imgViewVisible = true">
+          <div class="handle-icon" @click="imagePreview(modelValue)">
             <Icon icon="ep:zoom-in" />
             <span v-if="showBtnText">{{ t('action.detail') }}</span>
           </div>
-          <div class="handle-icon" @click="deleteImg" v-if="showDelete">
+          <div v-if="showDelete && !disabled" class="handle-icon" @click="deleteImg">
             <Icon icon="ep:delete" />
             <span v-if="showBtnText">{{ t('action.del') }}</span>
           </div>
@@ -42,11 +42,6 @@
     <div class="el-upload__tip">
       <slot name="tip"></slot>
     </div>
-    <el-image-viewer
-      v-if="imgViewVisible"
-      @close="imgViewVisible = false"
-      :url-list="[modelValue]"
-    />
   </div>
 </template>
 
@@ -55,7 +50,8 @@ import type { UploadProps } from 'element-plus'
 
 import { generateUUID } from '@/utils'
 import { propTypes } from '@/utils/propTypes'
-import { getAccessToken, getTenantId } from '@/utils/auth'
+import { createImageViewer } from '@/components/ImageViewer'
+import { useUpload } from '@/components/UploadFile/src/useUpload'
 
 defineOptions({ name: 'UploadImg' })
 
@@ -74,7 +70,6 @@ type FileTypes =
 // 接受父组件参数
 const props = defineProps({
   modelValue: propTypes.string.def(''),
-  updateUrl: propTypes.string.def(import.meta.env.VITE_UPLOAD_URL),
   drag: propTypes.bool.def(true), // 是否支持拖拽上传 ==> 非必传（默认为 true）
   disabled: propTypes.bool.def(false), // 是否禁用上传组件 ==> 非必传（默认为 false）
   fileSize: propTypes.number.def(5), // 图片大小限制 ==> 非必传（默认为 5M）
@@ -92,7 +87,12 @@ const message = useMessage() // 消息弹窗
 // 生成组件唯一id
 const uuid = ref('id-' + generateUUID())
 // 查看图片
-const imgViewVisible = ref(false)
+const imagePreview = (imgUrl: string) => {
+  createImageViewer({
+    zIndex: 9999999,
+    urlList: [imgUrl]
+  })
+}
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -100,10 +100,7 @@ const deleteImg = () => {
   emit('update:modelValue', '')
 }
 
-const uploadHeaders = ref({
-  Authorization: 'Bearer ' + getAccessToken(),
-  'tenant-id': getTenantId()
-})
+const { uploadUrl, httpRequest } = useUpload()
 
 const editImg = () => {
   const dom = document.querySelector(`#${uuid.value} .el-upload__input`)
@@ -130,7 +127,7 @@ const uploadError = () => {
   message.notifyError('图片上传失败，请您重新上传！')
 }
 </script>
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .is-error {
   .upload {
     :deep(.el-upload),

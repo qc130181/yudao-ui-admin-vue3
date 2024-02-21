@@ -59,6 +59,49 @@ export const deleteCustomer = async (id: number) => {
 }
 
 // 导出客户 Excel
-export const exportCustomer = async (params) => {
+export const exportCustomer = async (params: any) => {
   return await request.download({ url: `/crm/customer/export-excel`, params })
+}
+
+// 下载客户导入模板
+export const importCustomerTemplate = () => {
+  return request.download({ url: '/crm/customer/get-import-template' })
+}
+
+// 客户列表
+export const getSimpleCustomerList = async () => {
+  return await request.get({ url: `/crm/customer/list-all-simple` })
+}
+
+// ======================= 业务操作 =======================
+
+export interface TransferReqVO {
+  id: number | undefined // 客户编号
+  newOwnerUserId: number | undefined // 新负责人的用户编号
+  oldOwnerPermissionLevel: number | undefined // 老负责人加入团队后的权限级别
+}
+
+// 客户转移
+export const transferCustomer = async (data: TransferReqVO) => {
+  return await request.put({ url: '/crm/customer/transfer', data })
+}
+
+// 锁定/解锁客户
+export const lockCustomer = async (id: number, lockStatus: boolean) => {
+  return await request.put({ url: `/crm/customer/lock`, data: { id, lockStatus } })
+}
+
+// 领取公海客户
+export const receiveCustomer = async (ids: any[]) => {
+  return await request.put({ url: '/crm/customer/receive', params: { ids: ids.join(',') } })
+}
+
+// 客户放入公海
+export const putCustomerPool = async (id: number) => {
+  return await request.put({ url: `/crm/customer/put-pool?id=${id}` })
+}
+
+// 进入公海客户提醒
+export const getPutInPoolRemindCustomerPage = async (params) => {
+  return await request.get({ url: `/crm/customer/put-in-pool-remind-page`, params })
 }

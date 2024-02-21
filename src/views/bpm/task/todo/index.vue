@@ -64,6 +64,7 @@
       <el-table-column align="center" label="操作">
         <template #default="scope">
           <el-button link type="primary" @click="handleAudit(scope.row)">审批进度</el-button>
+          <el-button link type="primary" @click="handleCC(scope.row)">抄送</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -74,12 +75,14 @@
       :total="total"
       @pagination="getList"
     />
+    <TaskCCDialogForm  ref="taskCCDialogForm"/>
   </ContentWrap>
 </template>
 
 <script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
 import * as TaskApi from '@/api/bpm/task'
+import TaskCCDialogForm from '../../processInstance/detail/TaskCCDialogForm.vue'
 
 defineOptions({ name: 'BpmDoneTask' })
 
@@ -128,6 +131,12 @@ const handleAudit = (row) => {
       id: row.processInstance.id
     }
   })
+}
+
+const taskCCDialogForm = ref()
+/** 处理抄送按钮 */
+const handleCC = (row) => {
+  taskCCDialogForm.value.open(row)
 }
 
 /** 初始化 **/

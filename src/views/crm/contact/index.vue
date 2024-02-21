@@ -1,92 +1,107 @@
 <template>
   <ContentWrap>
     <!-- 搜索工作栏 -->
-    <!-- TODO zyna：筛选项，按照需求简化下 -->
     <el-form
-      class="-mb-15px"
-      :model="queryParams"
       ref="queryFormRef"
       :inline="true"
+      :model="queryParams"
+      class="-mb-15px"
       label-width="68px"
     >
-      <el-form-item label="客户编号" prop="customerId">
-        <el-input
+      <el-form-item label="客户" prop="customerId">
+        <el-select
           v-model="queryParams.customerId"
-          placeholder="请输入客户编号"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
-        />
+          clearable
+          lable-key="name"
+          placeholder="请选择客户"
+          value-key="id"
+          @keyup.enter="handleQuery"
+        >
+          <el-option
+            v-for="item in customerList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id!"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="姓名" prop="name">
         <el-input
           v-model="queryParams.name"
-          placeholder="请输入姓名"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
+          clearable
+          placeholder="请输入姓名"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="手机号" prop="mobile">
         <el-input
           v-model="queryParams.mobile"
-          placeholder="请输入手机号"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
+          clearable
+          placeholder="请输入手机号"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="座机" prop="telephone">
+      <el-form-item label="电话" prop="telephone">
         <el-input
           v-model="queryParams.telephone"
-          placeholder="请输入电话"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
+          clearable
+          placeholder="请输入电话"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
-
       <el-form-item label="QQ" prop="qq">
         <el-input
           v-model="queryParams.qq"
-          placeholder="请输入QQ"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
+          clearable
+          placeholder="请输入QQ"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="微信" prop="webchat">
+      <el-form-item label="微信" prop="wechat">
         <el-input
-          v-model="queryParams.webchat"
-          placeholder="请输入微信"
-          clearable
-          @keyup.enter="handleQuery"
+          v-model="queryParams.wechat"
           class="!w-240px"
+          clearable
+          placeholder="请输入微信"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="电子邮箱" prop="email">
         <el-input
           v-model="queryParams.email"
-          placeholder="请输入电子邮箱"
-          clearable
-          @keyup.enter="handleQuery"
           class="!w-240px"
+          clearable
+          placeholder="请输入电子邮箱"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
-        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
-        <el-button type="primary" @click="openForm('create')" v-hasPermi="['crm:contact:create']">
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
+        <el-button @click="handleQuery">
+          <Icon class="mr-5px" icon="ep:search" />
+          搜索
+        </el-button>
+        <el-button @click="resetQuery">
+          <Icon class="mr-5px" icon="ep:refresh" />
+          重置
+        </el-button>
+        <el-button v-hasPermi="['crm:contact:create']" type="primary" @click="openForm('create')">
+          <Icon class="mr-5px" icon="ep:plus" />
+          新增
         </el-button>
         <el-button
-          type="success"
-          plain
-          @click="handleExport"
-          :loading="exportLoading"
           v-hasPermi="['crm:contact:export']"
+          :loading="exportLoading"
+          plain
+          type="success"
+          @click="handleExport"
         >
-          <Icon icon="ep:download" class="mr-5px" /> 导出
+          <Icon class="mr-5px" icon="ep:download" />
+          导出
         </el-button>
       </el-form-item>
     </el-form>
@@ -94,98 +109,87 @@
 
   <!-- 列表 -->
   <ContentWrap>
-    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
-      <el-table-column label="姓名" fixed="left" align="center" prop="name">
+    <el-table v-loading="loading" :data="list" :show-overflow-tooltip="true" :stripe="true">
+      <el-table-column align="center" fixed="left" label="姓名" prop="name" width="140">
         <template #default="scope">
-          <el-link type="primary" :underline="false" @click="openDetail(scope.row.id)">{{
-            scope.row.name
-          }}</el-link>
+          <el-link :underline="false" type="primary" @click="openDetail(scope.row.id)">
+            {{ scope.row.name }}
+          </el-link>
         </template>
       </el-table-column>
-      <el-table-column label="客户名称" fixed="left" align="center" prop="customerName" />
-      <el-table-column label="性别" align="center" prop="sex">
+      <el-table-column align="center" fixed="left" label="客户名称" prop="customerName" width="120">
+        <template #default="scope">
+          <el-link
+            :underline="false"
+            type="primary"
+            @click="openCustomerDetail(scope.row.customerId)"
+          >
+            {{ scope.row.customerName }}
+          </el-link>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="手机" prop="mobile" width="120" />
+      <el-table-column align="center" label="电话" prop="telephone" width="120" />
+      <el-table-column align="center" label="邮箱" prop="email" width="120" />
+      <el-table-column align="center" label="职位" prop="post" width="120" />
+      <el-table-column align="center" label="地址" prop="detailAddress" width="120" />
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        label="下次联系时间"
+        prop="contactNextTime"
+        width="180px"
+      />
+      <el-table-column align="center" label="备注" prop="remark" />
+      <el-table-column align="center" label="关键决策人" prop="master" width="100">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.master" />
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="直属上级" prop="parentName" width="140" />
+      <el-table-column
+        :formatter="dateFormatter"
+        align="center"
+        label="最后跟进时间"
+        prop="contactLastTime"
+        width="180px"
+      />
+      <el-table-column align="center" label="性别" prop="sex">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.SYSTEM_USER_SEX" :value="scope.row.sex" />
         </template>
       </el-table-column>
-      <el-table-column label="职位" align="center" prop="post" />
-      <el-table-column label="是否关键决策人" align="center" prop="policyMakers">
-        <template #default="scope">
-          <dict-tag :type="DICT_TYPE.INFRA_BOOLEAN_STRING" :value="scope.row.policyMakers" />
-        </template>
-      </el-table-column>
-      <el-table-column label="直属上级" align="center" prop="parentId">
-        <template #default="scope">
-          {{ allContactList.find((contact) => contact.id === scope.row.parentId)?.name }}
-        </template>
-      </el-table-column>
-      <el-table-column label="手机号" align="center" prop="mobile" />
-      <el-table-column label="座机" align="center" prop="telephone" />
-      <el-table-column label="QQ" align="center" prop="qq" />
-      <el-table-column label="微信" align="center" prop="webchat" />
-      <el-table-column label="邮箱" align="center" prop="email" />
-      <el-table-column label="地址" align="center" prop="address" />
+      <el-table-column align="center" label="负责人" prop="ownerUserName" width="120" />
+      <el-table-column align="center" label="创建人" prop="creatorName" width="120" />
       <el-table-column
-        label="下次联系时间"
-        align="center"
-        prop="nextTime"
-        width="180px"
         :formatter="dateFormatter"
-      />
-      <el-table-column label="备注" align="center" prop="remark" />
-      <el-table-column
-        label="最后跟进时间"
         align="center"
-        prop="lastTime"
-        :formatter="dateFormatter"
-        width="180px"
-      />
-      <el-table-column label="负责人" align="center" prop="ownerUserId">
-        <template #default="scope">
-          {{ gotOwnerUser(scope.row.ownerUserId) }}
-        </template>
-      </el-table-column>
-      <!-- <el-table-column label="所属部门" align="center" prop="ownerUserId" /> -->
-      <el-table-column
         label="更新时间"
-        align="center"
         prop="updateTime"
-        :formatter="dateFormatter"
         width="180px"
       />
       <el-table-column
-        label="创建时间"
-        align="center"
-        prop="createTime"
         :formatter="dateFormatter"
+        align="center"
+        label="创建时间"
+        prop="createTime"
         width="180px"
       />
-      <!-- <el-table-column
-        label="创建人"
-        align="center"
-        prop="creator"
-        :formatter="dateFormatter"
-        width="180px"
-      >
-        <template #default="scope">
-          {{ userList.find((user) => user.id === scope.row.creator)?.nickname }}
-        </template>
-      </el-table-column> -->
-      <el-table-column label="操作" align="center" fixed="right" width="200">
+      <el-table-column align="center" fixed="right" label="操作" width="200">
         <template #default="scope">
           <el-button
-            plain
+            v-hasPermi="['crm:contact:update']"
+            link
             type="primary"
             @click="openForm('update', scope.row.id)"
-            v-hasPermi="['crm:contact:update']"
           >
             编辑
           </el-button>
           <el-button
-            plain
+            v-hasPermi="['crm:contact:delete']"
+            link
             type="danger"
             @click="handleDelete(scope.row.id)"
-            v-hasPermi="['crm:contact:delete']"
           >
             删除
           </el-button>
@@ -194,9 +198,9 @@
     </el-table>
     <!-- 分页 -->
     <Pagination
-      :total="total"
-      v-model:page="queryParams.pageNo"
       v-model:limit="queryParams.pageSize"
+      v-model:page="queryParams.pageNo"
+      :total="total"
       @pagination="getList"
     />
   </ContentWrap>
@@ -205,13 +209,12 @@
   <ContactForm ref="formRef" @success="getList" />
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import * as ContactApi from '@/api/crm/contact'
 import ContactForm from './ContactForm.vue'
 import { DICT_TYPE } from '@/utils/dict'
-import * as UserApi from '@/api/system/user'
 import * as CustomerApi from '@/api/crm/customer'
 
 defineOptions({ name: 'CrmContact' })
@@ -222,30 +225,20 @@ const { t } = useI18n() // 国际化
 const loading = ref(true) // 列表的加载中
 const total = ref(0) // 列表的总页数
 const list = ref([]) // 列表的数据
+const customerList = ref<CustomerApi.CustomerVO[]>([]) // 客户列表
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
-  nextTime: [],
-  mobile: null,
-  telephone: null,
-  email: null,
-  customerId: null,
-  address: null,
-  remark: null,
-  ownerUserId: null,
-  createTime: [],
-  lastTime: [],
-  parentId: null,
-  name: null,
-  post: null,
-  qq: null,
-  webchat: null,
-  sex: null,
-  policyMakers: null
+  mobile: undefined,
+  telephone: undefined,
+  email: undefined,
+  customerId: undefined,
+  name: undefined,
+  qq: undefined,
+  wechat: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
-const userList = ref<UserApi.UserVO[]>([]) // 用户列表
 
 /** 查询列表 */
 const getList = async () => {
@@ -305,35 +298,20 @@ const handleExport = async () => {
   }
 }
 
-// TODO @zyna：这个负责人的读取，放在后端好点
-const gotOwnerUser = (owerUserId: string) => {
-  let ownerName = ''
-  if (owerUserId !== null) {
-    owerUserId.split(',').forEach((item: string, index: number) => {
-      if (index != 0) {
-        ownerName =
-          ownerName + ',' + userList.value.find((user: { id: any }) => user.id == item)?.nickname
-      } else {
-        ownerName = userList.value.find((user: { id: any }) => user.id == item)?.nickname || ''
-      }
-    })
-  }
-  return ownerName
-}
-
-/** 打开客户详情 */
+/** 打开联系人详情 */
 const { push } = useRouter()
 const openDetail = (id: number) => {
   push({ name: 'CrmContactDetail', params: { id } })
 }
 
-// TODO @zyna：这个上级的读取，放在后端读取，更合适；因为可能数据量比较大
-const allContactList = ref([]) //所有联系人列表
-const allCustomerList = ref([]) //客户列表
+/** 打开客户详情 */
+const openCustomerDetail = (id: number) => {
+  push({ name: 'CrmCustomerDetail', params: { id } })
+}
+
 /** 初始化 **/
 onMounted(async () => {
   await getList()
-  userList.value = await UserApi.getSimpleUserList()
-  allContactList.value = await ContactApi.simpleAlllist()
+  customerList.value = await CustomerApi.getSimpleCustomerList()
 })
 </script>

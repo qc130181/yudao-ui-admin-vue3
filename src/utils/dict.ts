@@ -20,13 +20,20 @@ export interface DictDataType {
   cssClass: string
 }
 
+export interface NumberDictDataType extends DictDataType {
+  value: number
+}
+
 export const getDictOptions = (dictType: string) => {
   return dictStore.getDictByType(dictType) || []
 }
 
-export const getIntDictOptions = (dictType: string): DictDataType[] => {
-  const dictOption: DictDataType[] = []
+export const getIntDictOptions = (dictType: string): NumberDictDataType[] => {
+  // 获得通用的 DictDataType 列表
   const dictOptions: DictDataType[] = getDictOptions(dictType)
+  // 转换成 number 类型的 NumberDictDataType 类型
+  // why 需要特殊转换：避免 IDEA 在 v-for="dict in getIntDictOptions(...)" 时，el-option 的 key 会告警
+  const dictOption: NumberDictDataType[] = []
   dictOptions.forEach((dict: DictDataType) => {
     dictOption.push({
       ...dict,
@@ -96,7 +103,6 @@ export const getDictLabel = (dictType: string, value: any): string => {
 export enum DICT_TYPE {
   USER_TYPE = 'user_type',
   COMMON_STATUS = 'common_status',
-  SYSTEM_TENANT_PACKAGE_ID = 'system_tenant_package_id',
   TERMINAL = 'terminal', // 终端
 
   // ========== SYSTEM 模块 ==========
@@ -156,9 +162,7 @@ export enum DICT_TYPE {
   MEMBER_EXPERIENCE_BIZ_TYPE = 'member_experience_biz_type', // 会员经验业务类型
 
   // ========== MALL - 商品模块 ==========
-  PRODUCT_UNIT = 'product_unit', // 商品单位
   PRODUCT_SPU_STATUS = 'product_spu_status', //商品状态
-  PROMOTION_TYPE_ENUM = 'promotion_type_enum', // 营销类型枚举
 
   // ========== MALL - 交易模块 ==========
   EXPRESS_CHARGE_MODE = 'trade_delivery_express_charge_mode', //快递的计费方式
@@ -190,10 +194,18 @@ export enum DICT_TYPE {
   PROMOTION_BANNER_POSITION = 'promotion_banner_position', // banner 定位
 
   // ========== CRM - 客户管理模块 ==========
-  CRM_RECEIVABLE_CHECK_STATUS = 'crm_receivable_check_status',
-  CRM_RETURN_TYPE = 'crm_return_type',
+  CRM_AUDIT_STATUS = 'crm_audit_status', // CRM 审批状态
+  CRM_BIZ_TYPE = 'crm_biz_type', // CRM 业务类型
+  CRM_RECEIVABLE_RETURN_TYPE = 'crm_receivable_return_type', // CRM 回款的还款方式
   CRM_CUSTOMER_INDUSTRY = 'crm_customer_industry',
   CRM_CUSTOMER_LEVEL = 'crm_customer_level',
   CRM_CUSTOMER_SOURCE = 'crm_customer_source',
-  CRM_PRODUCT_STATUS = 'crm_product_status'
+  CRM_PRODUCT_STATUS = 'crm_product_status',
+  CRM_PERMISSION_LEVEL = 'crm_permission_level', // CRM 数据权限的级别
+  CRM_PRODUCT_UNIT = 'crm_product_unit', // 产品单位
+  CRM_FOLLOW_UP_TYPE = 'crm_follow_up_type', // 跟进方式
+
+  // ========== ERP - 企业资源计划模块  ==========
+  ERP_AUDIT_STATUS = 'erp_audit_status', // ERP 审批状态
+  ERP_STOCK_RECORD_BIZ_TYPE = 'erp_stock_record_biz_type' // 库存明细的业务类型
 }
